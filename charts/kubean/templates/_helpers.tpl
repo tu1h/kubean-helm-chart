@@ -2,7 +2,7 @@
 Expand the name of the chart.
 */}}
 {{- define "kubean.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
+{{- default .Chart.Name .Values.kubeanOperator.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{- define "kubean.namespace" -}}
@@ -15,16 +15,20 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 If release name contains chart name it will be used as a full name.
 */}}
 {{- define "kubean.fullname" -}}
-{{- if .Values.fullnameOverride }}
-{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
+{{- if .Values.kubeanOperator.fullnameOverride }}
+{{- .Values.kubeanOperator.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
-{{- $name := default .Chart.Name .Values.nameOverride }}
+{{- $name := default .Chart.Name .Values.kubeanOperator.nameOverride }}
 {{- if contains $name .Release.Name }}
 {{- .Release.Name | trunc 63 | trimSuffix "-" }}
 {{- else }}
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+{{- end }}
+
+{{- define "kubean.admissionName" -}}
+{{- printf "%s-admission" .Release.Name }}
 {{- end }}
 
 {{/*
@@ -38,25 +42,38 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "kubean.labels" -}}
-{{ include "kubean.selectorLabels" . }}
+{{ include "kubeanOperator.selectorLabels" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
 Selector labels
 */}}
-{{- define "kubean.selectorLabels" -}}
+{{- define "kubeanOperator.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kubean.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{- define "kubeanAdmission.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "kubean.name" . }}
+app.kubernetes.io/instance: {{ printf "%s-admission-controller" .Release.Name }}
+{{- end }}
+
+{{- define "kubeanAdmission.svcName" -}}
+{{- printf "%s-admission" .Chart.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
 {{- define "kubean.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "kubean.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.kubeanOperator.serviceAccount.create }}
+{{- default (include "kubean.fullname" .) .Values.kubeanOperator.serviceAccount.name }}
 {{- else }}
-{{- default "default" .Values.serviceAccount.name }}
+{{- default "default" .Values.kubeanOperator.serviceAccount.name }}
 {{- end }}
+{{- end }}
+
+{{- define "kubean.prehookImage" -}}
+{{- printf "%s/%s:%s" .Values.sprayJob.image.registry .Values.sprayJob.image.repository (.Values.sprayJob.image.tag | default .Chart.Version) }}
 {{- end }}
